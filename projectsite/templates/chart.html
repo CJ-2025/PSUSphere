@@ -1,0 +1,227 @@
+{% extends 'base.html' %} {% load static %} {% block content %}
+<div class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Charts</div>
+            <div class="card-category">Creative Charts for PSUSphere</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Number of Students Per Program</div>
+          </div>
+          <div class="card-body">
+            <div
+              class="chart-container"
+              style="position: relative; height: 400px"
+            >
+              <canvas
+                id="polarAreaChart"
+                style="width: 100%; height: 100%"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Student Distribution by Organization</div>
+          </div>
+          <div class="card-body">
+            <div
+              class="chart-container"
+              style="position: relative; height: 400px"
+            >
+              <canvas
+                id="multipleLineChart"
+                style="width: 100%; height: 100%"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              Annual Count of Students Joined in an Organization
+            </div>
+          </div>
+          <div class="card-body">
+            <div
+              class="chart-container"
+              style="position: relative; height: 400px"
+            >
+              <canvas id="barChart" style="width: 100%; height: 100%"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block chart %}
+<script>
+  function loadChartData() {
+    fetch("/student_count_by_program/")
+      .then((response) => response.json())
+      .then((data) => {
+        const programNames = data.map((item) => item.prog_name);
+        const studentCounts = data.map((item) => item.student_count);
+
+        const ctx = document.getElementById("polarAreaChart").getContext("2d");
+        new Chart(ctx, {
+          type: "polarArea",
+          data: {
+            labels: programNames,
+            datasets: [
+              {
+                data: studentCounts,
+                backgroundColor: [
+                  "#FF6384",
+                  "#36A2EB",
+                  "#FFCE56",
+                  "#4BC0C0",
+                  "#9966FF",
+                  "#FF9F40",
+                  "#00CED1",
+                  "#FFBF00",
+                  "#8A2BE2",
+                  "#7FFF00",
+                ],
+              },
+            ],
+          },
+          options: {
+            resposive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: "Student Count by Program",
+              },
+            },
+          },
+        });
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+
+    fetch("/student-distribution-by-organization/")
+      .then((response) => response.json())
+      .then((data) => {
+        const nonZeroOrgs = data.filter((item) => item.student_count > 0);
+
+        const organizationNames = nonZeroOrgs.map((item) => item.name);
+        const studentCounts = nonZeroOrgs.map((item) => item.student_count);
+
+        const ctx = document
+          .getElementById("multipleLineChart")
+          .getContext("2d");
+        // Create the chart
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: organizationNames,
+            datasets: [
+              {
+                label: "Number of Students",
+                borderColor: "#1d7af3",
+                pointBorderColor: "#FFF",
+                pointBackgroundColor: "#1d7af3",
+                pointBorderWidth: 2,
+                pointHoverRadius: 4,
+                pointHoverBorderWidth: 1,
+                pointRadius: 4,
+                backgroundColor: "transparent",
+                fill: false,
+                borderWidth: 2,
+                data: studentCounts,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+              position: "top",
+            },
+            tooltips: {
+              bodySpacing: 4,
+              mode: "nearest",
+              intersect: 0,
+              position: "nearest",
+              xPadding: 10,
+              yPadding: 10,
+              caretPadding: 10,
+            },
+            layout: {
+              padding: { left: 15, right: 15, top: 15, bottom: 15 },
+            },
+            scales: {
+              xAxes: [
+                {
+                  ticks: {
+                    autoSkip: true,
+                    maxRotation: 90,
+                    minRotation: 90,
+                  },
+                },
+              ],
+            },
+          },
+        });
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    fetch("/org-members-per-year/")
+      .then((response) => response.json())
+      .then((data) => {
+        const years = data.map((item) => new Date(item.year).getFullYear());
+        const counts = data.map((item) => item.count);
+        const ctx = document.getElementById("barChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: years,
+            datasets: [
+              {
+                label: "Number of Students Joined",
+                backgroundColor: "rgb(23, 125, 255)",
+                borderColor: "rgb(23, 125, 255)",
+                data: counts,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              yAxes: [
+                {
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+            },
+          },
+        });
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+  loadChartData();
+</script>
+{% endblock %}
